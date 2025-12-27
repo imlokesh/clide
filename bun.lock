@@ -11,6 +11,7 @@
         "@biomejs/biome": "2.3.10",
         "@types/bun": "latest",
         "@types/node": "^24.10.4",
+        "typescript": "^5.9.2",
       },
       "peerDependencies": {
         "typescript": "^5.9.2",
