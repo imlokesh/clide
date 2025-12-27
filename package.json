@@ -18,6 +18,10 @@
     "access": "public",
     "provenance": true
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imlokesh/clide.git"
+  },
   "scripts": {
     "build": "tsc",
     "test": "bun test",
@@ -29,7 +33,7 @@
     "typescript",
     "interactive"
   ],
-  "author": "Your Name",
+  "author": "imlokesh",
   "license": "MIT",
   "dependencies": {
     "dotenv": "^17.2.3"
