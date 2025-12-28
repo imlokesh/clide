@@ -843,3 +843,4 @@ export class ClideParser {
 export default async function clide(config: ClideConfig) {
   return await new ClideParser({ config }).parseConfig();
 }
+export type * from "./types.js";
