@@ -1,6 +1,6 @@
 {
   "name": "@imlokesh/clide",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A lightweight, type-safe, and interactive CLI builder",
   "type": "module",
   "main": "./dist/index.js",
