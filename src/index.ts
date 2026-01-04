@@ -184,11 +184,16 @@ export class ClideParser {
       // 4. Finalize (Validation, Defaults, Prompts)
       await this.#finalizeOptions();
     } catch (error) {
+      if (this.#config.throwOnError) {
+        throw error;
+      }
+
       if (error instanceof Error && !this.#config.disableHelp) {
         console.error(`\x1b[31mError: ${error.message}\x1b[0m\n`);
         this.showHelp();
         process.exit(1);
       }
+
       throw error;
     }
 
