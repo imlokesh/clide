@@ -2,28 +2,28 @@
  * The base interface for a command-line option.
  */
 export interface BaseClideOption {
-  /** The short-form alias for the option (e.g., 'v'). */
-  short?: string;
-  /** A boolean indicating if the option is required. */
-  required?: boolean;
-  /** The name of an environment variable to use as a fallback value. */
-  env?: string;
   /** A description of the option for use in help text. */
   description?: string;
+  /** The name of an environment variable to use as a fallback value. */
+  env?: string;
   /** A boolean indicating if the option should be hidden from help text. */
   hidden?: boolean;
+  /** A boolean indicating if the option is required. */
+  required?: boolean;
+  /** The short-form alias for the option (e.g., 'v'). */
+  short?: string;
 }
 
 /**
  * Defines a string-based command-line option.
  */
 export interface ClideStringOption extends BaseClideOption {
-  /** The type of the option. */
-  type: "string";
-  /** The default value for the option if not provided. */
-  default?: string;
   /** A list of valid string choices. */
   choices?: string[];
+  /** The default value for the option if not provided. */
+  default?: string;
+  /** The type of the option. */
+  type: "string";
   /** A function to validate the value of the option. */
   validate?(value: string): boolean | string;
 }
@@ -32,24 +32,24 @@ export interface ClideStringOption extends BaseClideOption {
  * Defines a boolean-based command-line option.
  */
 export interface ClideBooleanOption extends BaseClideOption {
-  /** The type of the option. */
-  type: "boolean";
   /** The default value for the option if not provided. */
   default?: boolean;
   /** A boolean indicating if the option can be negated. */
   negatable?: boolean;
+  /** The type of the option. */
+  type: "boolean";
 }
 
 /**
  * Defines a number-based command-line option.
  */
 export interface ClideNumberOption extends BaseClideOption {
-  /** The type of the option. */
-  type: "number";
-  /** The default value for the option if not provided. */
-  default?: number;
   /** A list of valid number choices. */
   choices?: number[];
+  /** The default value for the option if not provided. */
+  default?: number;
+  /** The type of the option. */
+  type: "number";
   /** A function to validate the value of the option. */
   validate?(value: number): boolean | string;
 }
@@ -63,34 +63,30 @@ export type ClideOption = ClideStringOption | ClideBooleanOption | ClideNumberOp
  * Defines a command within the CLI.
  */
 export interface ClideCommand {
-  /** A key-value pair of option names and their definitions. */
-  options?: Record<string, ClideOption>;
   /** A description of the command for use in help text. */
   description?: string;
+  /** A key-value pair of option names and their definitions. */
+  options?: Record<string, ClideOption>;
 }
 
 /**
  * The main configuration object for the `clide` library.
  */
 export interface ClideConfig {
-  /** The name of the CLI program. Will be used in "usage" section of help text. */
-  name?: string;
   /** A boolean indicating if positional arguments are allowed. */
   allowPositionals?: boolean;
   /** A key-value pair of command names and their definitions. */
   commands?: Record<string, ClideCommand>;
   /** The name of the default command to run when no command is specified. */
   defaultCommand?: string;
-  /** A key-value pair of global option names and their definitions. */
-  options?: Record<string, ClideOption>;
   /** A description of the CLI for use in help text. */
   description?: string;
-  /** A boolean indicating if help text should be printed. */
-  disablePrompts?: boolean;
-  /** A boolean indicating if help text should be printed. */
+  /** A boolean indicating if help text should be suppressed. */
   disableHelp?: boolean;
-  /** By default, errors are caught and printed to console along with help text. Use this option to override.  */
-  throwOnError?: boolean;
+  /** A boolean indicating if interactive prompts should be disabled. */
+  disablePrompts?: boolean;
+  /** A key-value pair of global option names and their definitions. */
+  options?: Record<string, ClideOption>;
   /** A function to prompt the user for a value. */
   promptAsync?: (
     optionName: string,
@@ -98,6 +94,8 @@ export interface ClideConfig {
     scope: OptionScope,
     program: Readonly<ClideProgram>,
   ) => Promise<ClideOptionValue>;
+  /** By default, errors are caught and printed to console along with help text. Use this option to override. */
+  throwOnError?: boolean;
 }
 
 export type ClideOptionValue = string | number | boolean;
@@ -108,14 +106,14 @@ export type ClideOptionValue = string | number | boolean;
 export interface ClideProgram {
   /** The name of the command executed. Undefined if no commands are configured or executed. */
   command?: string;
-  positionals?: string[];
+  /** Only command-specific options */
+  commandOptions: Record<string, ClideOptionValue>;
+  /** Only global options */
+  globalOptions: Record<string, ClideOptionValue>;
   isDefaultCommand?: boolean;
   /** A key-value pair of all parsed option names and their final values. */
   options: Record<string, ClideOptionValue>;
-  /** Only global options */
-  globalOptions: Record<string, ClideOptionValue>;
-  /** Only command-specific options */
-  commandOptions: Record<string, ClideOptionValue>;
+  positionals?: string[];
 }
 
 export type ParsedArgs = { programArgs: string[]; commandArgs: string[] };
