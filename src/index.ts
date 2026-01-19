@@ -238,8 +238,6 @@ export class ClideParser {
 
     const cmdConfig = commandName ? this.#config.commands?.[commandName] : undefined;
 
-    const binName = this.#config.name || "cli";
-
     // Look up default command
     const defaultCmdName = this.#config.defaultCommand;
     const defaultCmdConfig =
@@ -252,24 +250,11 @@ export class ClideParser {
 
     // 2. Header
     console.log("");
-    if (description) console.log(`${description}\n`);
-
-    // 3. Usage
-    let usage = `${style.dim("$")} ${binName}`;
-
-    if (commandName && !this.#program.isDefaultCommand) {
-      usage += ` ${style.cyan(commandName)}`;
-    } else if (!commandName && defaultCmdName) {
-      usage += ` ${style.dim(`[${defaultCmdName}]`)}`;
+    if (description) {
+      console.log(`${description}\n`);
     }
 
-    usage += ` ${style.yellow("[options]")}`;
-    if (this.#config.allowPositionals) usage += ` ${style.dim("[arguments]")}`;
-
-    console.log(`${style.bold("USAGE")}`);
-    console.log(`  ${usage}\n`);
-
-    // 4. Render Table Helper
+    // 3. Render Table Helper
     const renderTable = (header: string, items: Record<string, ClideOption>) => {
       const rows = Object.entries(items)
         .filter(([, opt]) => !opt.hidden)
@@ -326,7 +311,7 @@ export class ClideParser {
 
       if (rows.length === 0) return;
 
-      console.log(`${style.bold(header.toUpperCase())}`);
+      console.log(`${style.bold(header)}`);
 
       const COLUMN_WIDTH = 40;
 
