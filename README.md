@@ -1,35 +1,28 @@
 # Clide
 
-**Clide** is a lightweight, type-safe, and interactive command-line interface (CLI) builder for Node.js and Bun. It streamlines argument parsing, validation, and auto-generates help text, allowing you to focus on your tool's logic rather than boilerplate.
+**Clide** ("Command Line Guide") is a lightweight, type-safe, and interactive command-line interface (CLI) builder for Node.js and Bun. It streamlines argument parsing, validation, and auto-generates help text, allowing you to focus on your tool's logic rather than boilerplate.
 
-## Features
-
-* **Type-Safe Configuration**: Built with TypeScript in mind.
-* **Subcommand System**: Support for organizing tools into specific actions (e.g., `cli build`, `cli deploy`).
-* **Rich Option Types**: Native support for Strings, Numbers, and Booleans.
-* **Interactive Prompts**: Automatically prompts users for missing required options.
-* **Environment Variables**: Bind options directly to environment variables (e.g., `env: 'PORT'`).
-* **Validation**: Built-in validators, specific choice lists, and custom validation functions.
-* **Auto-Help**: Automatically generates beautiful help menus (`--help`).
-* **Short Aliases**: Support for short flags (e.g., `-v` for `--verbose`) and flag stacking (e.g., `-xzf`).
-
-## Installation
+## Install
 
 ```bash
-npm install @imlokesh/clide
-# or
 bun add @imlokesh/clide
+#or
+npm install @imlokesh/clide
 ```
 
-## Quick Start
+## Basic Usage
 
-Create a simple CLI with a single option.
+Create a simple CLI with a string and a boolean option, and an about command. 
 
 ```typescript
-import clide from "clide";
+// index.ts
+import clide, { type ClideConfig } from "@imlokesh/clide";
 
-const config = {
-  description: "My Awesome CLI",
+const config: ClideConfig = {
+  description: "This is a test for clide",
+  throwOnError: true,
+  allowPositionals: true,
+  defaultCommand: "about",
   options: {
     name: {
       type: "string",
@@ -37,171 +30,165 @@ const config = {
       description: "The name to greet",
       default: "World",
     },
-    verbose: {
+    shout: {
       type: "boolean",
-      short: "v",
-      description: "Enable verbose logging",
+      short: "s",
+      description: "Make the greeting loud",
     },
+  },
+  commands: {
+    about: { description: "About this app" },
   },
 };
 
-// Run the parser
-const result = await clide(config);
+// Parse clide config
+try {
+  const program = await clide(config);
 
-if (result.options.verbose) {
-  console.log("Debug mode enabled");
+  let message = `Hello, ${program.options.name}!`;
+
+  if (program.options.shout) {
+    message = message.toUpperCase();
+  }
+
+  if (program.command === "about") {
+    console.log("This is a sample app that greets users. ");
+  }
+
+  console.log(message);
+} catch (e) {
+  console.error(`Error: ${(e as Error).message}`);
 }
-
-console.log(`Hello, ${result.options.name}!`);
 ```
 
-**Run it:**
+Then run the program like this. 
+
 ```bash
-node cli.js --name "Clide User" -v
-# Output:
-# Debug mode enabled
-# Hello, Clide User!
+$ bun index.ts
+# Hello, World!
+
+$ bun index.ts --name Dev
+# Hello, Dev!
+
+$ bun index.ts --name=Dev
+# Hello, Dev!
+
+$ bun index.ts -n Dev
+# Hello, Dev!
+
+$ bun index.ts --shout
+# HELLO, WORLD!
+
+$ bun index.ts -sn dev
+# HELLO, DEV!
+
+$ bun index.ts about
+# This is a sample app that greets users. 
+# Hello, World!
 ```
 
-## Configuration
+### --help
+Clide automatically generates a `--help,-h` option for the main program and each command. You can disable this using the `disableHelp` option.
 
-The core of Clide is the configuration object passed to the main function.
+Moreover, by default, if an error occurs while parsing options, the program will print the error message, show help information, and then exit with a non-zero status code. You can disable this using the `throwOnError` option to throw the error and work with it in your own code.
 
-### Options (`ClideOption`)
+```bash
+$ bun index.ts --help
+# 
+# This is a test for clide
+# 
+# Global Options
+#   -n, --name                              The name to greet <string>, default: World
+#   -s, --shout                             Make the greeting loud
+#   -h, --help                              Show help information
+# 
+# Default Command Options (about)
+#   -h, --help                              Show help information
+# 
+# COMMANDS
+#   about (default)    About this app
+```
 
-Options can be defined globally or within specific commands.
+## Required Options & Prompts
 
-| Property | Type | Description |
-| :--- | :--- | :--- |
-| `type` | `"string" \| "number" \| "boolean"` | **Required.** The data type of the option. |
-| `short` | `string` | A single-character alias (e.g., `'p'` for `-p`). |
-| `description` | `string` | Help text description. |
-| `required` | `boolean` | If true, will prompt the user if missing. |
-| `default` | `any` | The default value if not provided. |
-| `env` | `string` | Environment variable to fallback to. |
-| `choices` | `string[] \| number[]` | Array of allowed values. |
-| `validate` | `Function` | Custom validation logic. |
-| `negatable` | `boolean` | (Boolean only) Allows `--no-flag` to set value to false. |
+If an option is marked as `required` and not provided, Clide will request
+a value using the configured prompt handler.
 
-#### Example: Detailed Options
+A default handler is included but you can customize it using the `promptAsync` option.
 
-```typescript
+## Options
+
+```ts
 options: {
   port: {
     type: "number",
-    short: "p",
     default: 3000,
-    env: "SERVER_PORT",
-    validate: (n) => n > 1024 || "Port must be > 1024"
+    env: "PORT",
+    description: "Server port",
   },
-  mode: {
+  format: {
     type: "string",
-    choices: ["dev", "prod", "test"],
-    required: true // Will trigger a prompt if missing
-  }
+    choices: ["json", "yaml", "text"],
+  },
+  age: {
+    type: "number",
+    validate: (v) => v > 0 || "Age must be positive",
+  },
 }
 ```
 
-### Commands
+Supported option types:
 
-Clide supports a single level of subcommands (flat structure). Commands are defined in the `commands` object.
+- string
+- number
+- boolean
 
-```typescript
-import clide from "clide";
+Supported features per option:
 
-const { command, options } = await clide({
-  name: "app-cli",
-  commands: {
-    // Defines 'node cli.js serve'
-    serve: {
-      description: "Start the server",
-      options: {
-        port: { type: "number", default: 8080 },
-      },
-    },
-    // Defines 'node cli.js build'
-    build: {
-      description: "Build the project",
-      options: {
-        minify: { type: "boolean", short: "m" },
-        out: { type: "string", required: true },
-      },
+- short aliases
+- defaults
+- environment variable fallback
+- required prompts
+- value validation
+- allowed choices
+- hidden options
+
+## Commands
+
+Commands allow you to group behavior and options.
+
+```ts
+commands: {
+  build: {
+    description: "Build the project",
+    options: {
+      watch: { type: "boolean" },
     },
   },
-});
-
-if (command === "serve") {
-  console.log(`Starting server on port ${options.port}...`);
-} else if (command === "build") {
-  console.log(`Building to ${options.out} (Minified: ${options.minify})...`);
 }
 ```
 
-## Interactive Prompts
+Global options must appear before the command.
 
-If an option is marked as `required: true` and the user does not provide it via flags or environment variables, Clide will automatically pause execution and prompt the user for input.
+```bash
+# ❌ invalid
+cli build --watch --port 3000
 
-```typescript
-options: {
-  token: {
-    type: "string",
-    required: true,
-    description: "API Token"
-  }
-}
+# ✅ valid
+cli --port 3000 build --watch
 ```
 
-* **Runtime behavior:**
-    ```text
-    $ node cli.js
-    Please enter a value for token: _
-    ```
+## Return Value
 
-To disable this behavior, set `disablePrompts: true` in your root config.
+```ts
+const program = await clide(config);
 
-## Environment Variables
-
-Clide loads `.env` files automatically (via `dotenv`). You can link options to environment variables easily.
-
-```typescript
-options: {
-  apiKey: {
-    type: "string",
-    env: "API_KEY" // Will look for process.env.API_KEY
-  }
-}
-```
-
-Priority order:
-1.  Command Line Arguments (`--api-key`)
-2.  Environment Variables (`API_KEY`)
-3.  Default Value (`default: "..."`)
-4.  Interactive Prompt (if `required`)
-
-## Positional Arguments
-
-By default, strict parsing is enabled. To accept positional arguments (arguments without flags), set `allowPositionals: true`.
-
-```typescript
-const result = await clide({
-  allowPositionals: true,
-  options: { verbose: { type: "boolean" } }
-});
-
-// Run: node cli.js file1.txt file2.txt --verbose
-console.log(result.positionals); // ["file1.txt", "file2.txt"]
-```
-
-## TypeScript Usage
-
-Clide exports types to help you strongly type your configuration and results.
-
-```typescript
-import clide, { type ClideConfig } from "clide";
-
-const config: ClideConfig = {
-  // ... fully typed config
-};
+// program.command is the name of selectedcommand
+// program.options are the parsed options
+// program.globalOptions are the parsed global options
+// program.commandOptions are the parsed command options
+// program.positionals are the parsed positionals (only if allowPositionals is true in config)
+// program.isDefaultCommand is true if the user did not explicitly provide a command
 ```
 
 ## License
