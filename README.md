@@ -158,14 +158,20 @@ Supported features per option:
 Commands allow you to group behavior and options.
 
 ```ts
-commands: {
-  build: {
-    description: "Build the project",
-    options: {
-      watch: { type: "boolean" },
+import clide from "@imlokesh/clide";
+
+const program = await clide({
+  options: {
+    port: { type: "number", default: 3000 },
+  },
+  commands: {
+    build: {
+      options: {
+        watch: { type: "boolean" },
+      },
     },
   },
-}
+});
 ```
 
 Global options must appear before the command.
