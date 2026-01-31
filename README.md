@@ -42,23 +42,45 @@ if (program.command === "greet") {
 }
 ```
 
-## Auto-Generated Help
+## Commands
 
-Clide automatically injects a `--help, -h` option for the main program and every command.
+Commands allow you to group options and behavior. Options defined inside a command are isolated to that command.
 
-```bash
-$ bun index.ts --help
+```typescript
+commands: {
+  build: {
+    options: { minify: { type: "boolean" } }
+  },
+  deploy: {
+    options: { target: { type: "string" } }
+  }
+}
 ```
 
-It intelligently handles conflicts: if you define a custom option with `short: "h"`, Clide will only use `--help` for the help menu, freeing up `-h` for your option.
+### Default Command
+You can define a `defaultCommand` to run when no command is specified. This is useful for single-purpose CLIs or tools with a primary action (like `npm install`).
 
-### Error Handling
-By default, if an argument parsing error occurs (e.g., unknown option, missing value), Clide will:
-1. Print the error message in red.
-2. Display the help menu.
-3. Exit the process with code `1`.
+```typescript
+const program = await clide({
+  defaultCommand: "start",
+  commands: {
+    start: {
+      description: "Start the server",
+      options: { port: { type: "number", default: 3000 } }
+    }
+  }
+});
+```
 
-You can override this behavior using `throwOnError: true` to catch errors manually.
+When a user runs the CLI without a command, Clide treats it as an invocation of the default command:
+
+```bash
+# Runs "start" command with default options
+$ cli
+
+# Runs "start" command with custom options
+$ cli --port 8080
+```
 
 ## Options Configuration
 
@@ -76,7 +98,7 @@ options: {
   // Number with validation
   port: {
     type: "number",
-    env: "PORT", // Auto-load from env (Args > Env > Default)
+    env: "PORT", 
     validate: (n) => n > 1000 || "Port must be > 1000", // Return string for custom error
   },
 
@@ -96,6 +118,15 @@ options: {
 }
 ```
 
+### Option Precedence
+Clide resolves option values in the following order (highest priority first):
+
+1.  **Command Line Flag** (`--port 3000`)
+2.  **Environment Variable** (`PORT=3000`)
+3.  **Default Value** (`default: 8080`)
+
+If an option is `required` and no value is found in any of these three places, Clide will trigger an interactive prompt (unless disabled).
+
 ## Input Features
 
 ### Short Flag Stacking
@@ -106,19 +137,18 @@ Clide supports stacking boolean short flags. If the last flag in the stack expec
 $ cli -vfu admin
 ```
 
-### Positional Arguments
-To accept loose arguments (values provided without flags), enable `allowPositionals`.
+### Positional Arguments & Terminator
+To accept loose arguments (values without flags), enable `allowPositionals`.
 
-```typescript
-const program = await clide({
-  allowPositionals: true,
-  // ...
-});
-```
+Clide also supports the standard POSIX `--` terminator. Everything following `--` is **always** captured as a positional argument, regardless of the `allowPositionals` setting. This stops the parser from interpreting subsequent arguments as flags or commands.
 
 ```bash
-$ cli my-command src dist
-# program.positionals -> ["src", "dist"]
+# "-file.txt" is captured as a positional argument, not a flag
+$ cli -- -file.txt
+```
+
+```typescript
+// program.positionals -> ["-file.txt"]
 ```
 
 ### Strict Ordering
@@ -151,6 +181,25 @@ await clide({
 });
 ```
 
+## Help & Error Handling
+
+### Auto-Generated Help
+Clide automatically injects a `--help, -h` option for the main program and every command.
+
+```bash
+$ bun index.ts --help
+```
+
+It intelligently handles conflicts: if you define a custom option with `short: "h"`, Clide will only use `--help` for the help menu, freeing up `-h` for your option.
+
+### Error Handling
+By default, if an argument parsing error occurs (e.g., unknown option, missing value), Clide will:
+1. Print the error message in red.
+2. Display the help menu.
+3. Exit the process with code `1`.
+
+You can override this behavior using `throwOnError: true` to catch errors manually.
+
 ## API Reference
 
 ### Return Object
@@ -164,7 +213,7 @@ program.command          // (string) Name of the selected command
 program.options          // (object) Merged map of all active options (global + command)
 program.globalOptions    // (object) Only global options
 program.commandOptions   // (object) Only command-specific options
-program.positionals      // (string[]) Array of positional args (if allowed)
+program.positionals      // (string[]) Array of positional args (if allowed or forced by --)
 program.isDefaultCommand // (boolean) True if the default command was inferred
 ```
 

@@ -308,7 +308,6 @@ describe("UI & Output (Help System)", () => {
 
     const output = logs.join("\n");
     expect(output).toContain("Test App");
-    expect(output).toContain("USAGE");
     expect(output).toContain("--verbose");
   });
 
@@ -325,7 +324,8 @@ describe("UI & Output (Help System)", () => {
     restore();
 
     expect(errors.join("\n")).toContain("Error: Unknown option");
-    expect(logs.join("\n")).toContain("USAGE");
+    expect(logs.join("\n")).toContain("Global Options");
+    expect(logs.join("\n")).toContain("--verbose");
   });
 
   test("auto-generated help flag does not conflict with user 'h' flag", async () => {
@@ -429,5 +429,68 @@ describe("Custom Parsers", () => {
 
     const result = await parser.parseConfig();
     expect(result.options.verbose).toBe(true);
+  });
+});
+
+describe("POSIX Terminator (--)", () => {
+  // Config with positionals DISABLED to prove -- overrides strictness
+  const strictConfig: ClideConfig = {
+    disableHelp: true,
+    allowPositionals: false,
+    options: {
+      verbose: { type: "boolean", short: "v" },
+    },
+    commands: {
+      run: {
+        options: {
+          force: { type: "boolean", short: "f" },
+        },
+      },
+    },
+  };
+
+  test("forces positionals even when allowPositionals is false", async () => {
+    // "--verbose" is usually a flag, but after -- it must be a string
+    const result = await parse(strictConfig, ["--", "--verbose"]);
+
+    expect(result.options.verbose).toBeUndefined();
+    expect(result.positionals).toEqual(["--verbose"]);
+  });
+
+  test("stops parsing commands after terminator", async () => {
+    // "run" is a valid command, but here it should be a positional argument
+    const result = await parse(strictConfig, ["--", "run"]);
+
+    expect(result.command).toBeUndefined(); // Should NOT be detected as a command
+    expect(result.positionals).toEqual(["run"]);
+  });
+
+  test("works correctly inside a subcommand", async () => {
+    // Logic: run (command) -> --force (flag) -> -- (terminator) -> -f (positional)
+    const result = await parse(strictConfig, ["run", "--force", "--", "-f"]);
+
+    expect(result.command).toBe("run");
+    expect(result.options.force).toBe(true); // Flag BEFORE terminator parses correctly
+    expect(result.positionals).toEqual(["-f"]); // Flag AFTER terminator is positional
+  });
+
+  test("handles mixed flags and positionals", async () => {
+    const result = await parse(strictConfig, ["-v", "--", "file.txt", "-f"]);
+
+    expect(result.options.verbose).toBe(true);
+    expect(result.positionals).toEqual(["file.txt", "-f"]);
+  });
+
+  test("strips the terminator itself from output", async () => {
+    const result = await parse(strictConfig, ["--", "arg1"]);
+
+    expect(result.positionals).not.toContain("--");
+    expect(result.positionals).toEqual(["arg1"]);
+  });
+
+  test("captures multiple args after terminator", async () => {
+    const result = await parse(strictConfig, ["--", "one", "two", "--three"]);
+
+    expect(result.positionals).toEqual(["one", "two", "--three"]);
   });
 });

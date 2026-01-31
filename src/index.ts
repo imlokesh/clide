@@ -480,8 +480,16 @@ export class ClideParser {
   }
 
   #splitArgsByCommand() {
-    const args = this.#args;
+    let args = this.#args;
     const { commands, defaultCommand } = this.#config;
+
+    const j = args.indexOf("--");
+
+    if (j > -1) {
+      this.#program.positionals ??= [];
+      this.#program.positionals.push(...args.slice(j + 1));
+      args = args.slice(0, j);
+    }
 
     for (let i = 0; i < args.length; i++) {
       const arg = args[i] as string;
