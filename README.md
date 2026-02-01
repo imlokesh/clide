@@ -75,7 +75,7 @@ commands: {
 ```
 
 ### Default Command
-You can define a `defaultCommand` to run when no command is specified. This is useful for single-purpose CLIs or tools with a primary action (like `npm install`).
+You can define a `defaultCommand` to run when no command is specified. This is useful for single-purpose CLIs or tools with a primary action. For example, `bun index.ts` automatically runs `bun run index.ts` command).
 
 ```typescript
 const program = await clide({
@@ -87,16 +87,26 @@ const program = await clide({
     }
   }
 });
+
+console.log(JSON.stringify(program, null, 2));
 ```
 
 When a user runs the CLI without a command, Clide treats it as an invocation of the default command:
 
 ```bash
-# Runs "start" command with default options
 $ cli
 
-# Runs "start" command with custom options
-$ cli --port 8080
+# {
+#   "options": {
+#     "port": 3000
+#   },
+#   "globalOptions": {},     
+#   "commandOptions": {      
+#     "port": 3000
+#   },
+#   "isDefaultCommand": true,
+#   "command": "start"       
+# }
 ```
 
 ## Options Configuration
