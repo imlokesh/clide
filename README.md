@@ -1,6 +1,6 @@
 # Clide
 
-**Clide** ("Command Line Guide") is a lightweight, type-safe, and interactive command-line interface (CLI) builder for Node.js and Bun. It streamlines argument parsing, validation, and auto-generates help text, allowing you to focus on your tool's logic rather than boilerplate.
+**Clide** ("Command Line Guide") is a simple CLI parser for bun and nodejs. It can auto prompt for required options and displays help text for commands and options.
 
 ## Install
 
@@ -11,6 +11,23 @@ npm install @imlokesh/clide
 ```
 
 ## Quick Start
+
+Suppose you want to accept a port parameter from the command line. It's as easy as this. 
+
+```typescript
+// index.ts
+import clide from "@imlokesh/clide";
+
+const program = await clide({
+  options: {
+    port: { type: "number", required: true },
+  }
+});
+
+console.log(program.options.port);
+```
+
+## Full Example
 
 Create a CLI with global options, commands, and validation.
 
