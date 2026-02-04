@@ -42,7 +42,7 @@ export class ClideParser {
       const signal = AbortSignal.timeout(120_000);
 
       let prompt = `Please enter a value for ${optionName}`;
-      prompt += scope === "global" ? ": " : ` (command ${program.command}): `;
+      prompt += scope === "global" ? ": " : ` (for command ${program.command}): `;
 
       const rl = createInterface({
         input: process.stdin,
@@ -258,7 +258,7 @@ export class ClideParser {
     const renderTable = (header: string, items: Record<string, ClideOption>) => {
       const rows = Object.entries(items)
         .filter(([, opt]) => !opt.hidden)
-        .map(([name, opt]) => {
+        .flatMap(([name, opt]) => {
           // --- LEFT COLUMN ---
           let leftStyled = "";
           let leftRaw = "";
@@ -301,12 +301,27 @@ export class ClideParser {
             choicesStr = `${style.dim("choices:")} ${values}`;
           }
 
-          return {
+          const row = {
             left: leftStyled,
             len: leftRaw.length,
             desc: finalDesc,
             choices: choicesStr,
           };
+
+          if (opt.type === "boolean" && opt.negatable) {
+            const negatableOption = `--no-${name}`;
+            return [
+              row,
+              {
+                left: style.yellow(`    ${negatableOption}`),
+                len: negatableOption.length,
+                desc: "",
+                choices: "",
+              },
+            ];
+          } else {
+            return row;
+          }
         });
 
       if (rows.length === 0) return;
